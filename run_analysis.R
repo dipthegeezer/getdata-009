@@ -16,6 +16,9 @@ load_files <- function(path){
     headers <- rbind(c("subject"),rbind(c("activity"), headers))
     headers <- headers[,c("V2")]
     
+    activity <- read.table(file.path(path, "activity_labels.txt"), sep = "" , header = F, stringsAsFactors = F)
+    colnames(activity) <- c("activity", "activity_name") 
+    
     test <- load_set(path, "test")
     colnames(test) <- headers
 
@@ -24,8 +27,11 @@ load_files <- function(path){
     
     data <- rbind(test, train)
     data <- data[grep("subject|activity|mean\\(\\)|std\\(\\)", headers, perl=TRUE, value=FALSE)]
-    rm(test, train, headers)
-    return(data)
+    data <- inner_join(activity,data)
+    data <- select(data, -activity)
+    final <- group_by(data, activity_name, subject) %>% summarise_each(funs(mean))
+    write.table(final, row.names = FALSE, file = "final.txt")
+    rm(test, train, headers, activity, data, final)
 }
 
 
